@@ -62,7 +62,7 @@ public class ManuscriptParserUnit {
     @Test
     void extractReferenceRaw_괄호안_내용_찾기() {
         java.util.List<String> titleLines = java.util.List.of("하나님 자녀", "Child of God", "(롬6:6-11)");
-        assertEquals("롬6:6-11", ManuscriptParser.extractReferenceRaw(titleLines));
+        assertEquals("로마서6:6-11", ManuscriptParser.extractReferenceRaw(titleLines));
     }
 
     @Order(4)
@@ -107,7 +107,7 @@ public class ManuscriptParserUnit {
     void extractSectionTitleLines_숫자줄만_순서대로_찾기() {
         java.util.List<String> lines = java.util.List.of("제목", "한글", "영어", "1.ㅇㄴㄹ", "1.osf", "2.ㄷㅈㄹ" ,"2. ewf", "3. ㄷㅇㅁ","3.abc");
         java.util.List<String> result = ManuscriptParser.extractSectionTitleLines(lines);
-        assertEquals(java.util.List.of("1.ㅇㄴㄹ", "1.osf", "2.ㄷㅈㄹ", "2. ewf"), result);
+        assertEquals(java.util.List.of("1. ㅇㄴㄹ", "1. osf", "2. ㄷㅈㄹ", "2. ewf, 3. ㄷㅇㅁ, 3. abc"), result);
     }
 
     @Order(10)

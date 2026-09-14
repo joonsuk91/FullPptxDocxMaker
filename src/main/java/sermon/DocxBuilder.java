@@ -1,9 +1,12 @@
 package sermon;
 
+import org.apache.poi.xwpf.usermodel.BreakType;
 import org.apache.poi.xwpf.usermodel.ParagraphAlignment;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.apache.poi.xwpf.usermodel.XWPFRun;
+
+import java.util.List;
 
 public final class DocxBuilder {
 
@@ -28,47 +31,32 @@ public final class DocxBuilder {
     private static final int BODY_TITLE_ENGLISH_FONT_SIZE = 11;
 
     private static final String BIBLE_RESOURCE_PATH = "/data/bible_ko.json";
-    private static final java.util.regex.Pattern REFERENCE_HEADER_PATTERN =
-            java.util.regex.Pattern.compile("([가-힣]+)\\s*(\\d+)\\s*:\\s*(\\d+)-(\\d+)");
-    private static final java.util.regex.Pattern PLAIN_CITATION_PATTERN =
-            java.util.regex.Pattern.compile("^([가-힣]+)\\s*(\\d+):(\\d+)(?:-(\\d+))?$");
-    private static final java.util.regex.Pattern MARKED_CITATION_PATTERN =
-            java.util.regex.Pattern.compile("^([가-힣]+)\\s*(\\d+):(\\d+)(.*)$");
-
+    private static final String BIBLE_RESOURCE_PATH_ENGLISH = "/data/bible_en.json";
 
     private DocxBuilder() {
     }
 
-
     public static XWPFDocument build(ParsedSermon sermon) throws java.io.IOException {
         XWPFDocument document = new XWPFDocument();
 
-        // 제목
         writeTitleSection(document, sermon.koreanTitle(), sermon.englishTitle());
-
-        // 말씀차례
+        writeBlankLine(document);
         writeSectionTitleBlock(document, sermon.sectionTitleLines());
-
-        // 본문
         writeReferenceBlock(document, sermon.referenceRaw());
         writeBlocks(document, sermon.blocks());
+        writePageBreak(document);
 
         return document;
     }
 
-    // 제목
-
     static void writeTitleSection(XWPFDocument document, String koreanTitle, String englishTitle) {
-        writeTitleLine(document, koreanTitle, KOREAN_TITLE_BOLD, KOREAN_TITLE_FONT_SIZE, ParagraphAlignment.CENTER, true);
-        writeTitleLine(document, englishTitle, ENGLISH_TITLE_BOLD, ENGLISH_TITLE_FONT_SIZE, ParagraphAlignment.CENTER, false);
+        writeTitleLine(document, koreanTitle, KOREAN_TITLE_BOLD, KOREAN_TITLE_FONT_SIZE, ParagraphAlignment.CENTER);
+        writeTitleLine(document, englishTitle, ENGLISH_TITLE_BOLD, ENGLISH_TITLE_FONT_SIZE, ParagraphAlignment.CENTER);
     }
 
-    static void writeTitleLine(XWPFDocument document, String text, boolean bold, int fontSize, ParagraphAlignment alignment, boolean pageBreak) {
+    static void writeTitleLine(XWPFDocument document, String text, boolean bold, int fontSize, ParagraphAlignment alignment) {
         XWPFParagraph paragraph = document.createParagraph();
         paragraph.setAlignment(alignment);
-        if (pageBreak) {
-            paragraph.setPageBreak(true);
-        }
 
         XWPFRun run = paragraph.createRun();
         run.setText(text);
@@ -76,44 +64,43 @@ public final class DocxBuilder {
         run.setFontSize(fontSize);
     }
 
-    // 말씀차례
-    static void writeSectionTitleBlock(XWPFDocument document, java.util.List<String> sectionTitleLines) {
-        writeTitleLine(document, SECTION_HEADER_TEXT, SECTION_HEADER_BOLD, SECTION_HEADER_FONT_SIZE, ParagraphAlignment.LEFT, false);
+    static void writeBlankLine(XWPFDocument document) {
+        writeTitleLine(document, "", false, VERSE_TEXT_FONT_SIZE, ParagraphAlignment.LEFT);
+    }
+
+    static void writePageBreak(XWPFDocument document) {
+        XWPFParagraph paragraph = document.createParagraph();
+        paragraph.createRun().addBreak(BreakType.PAGE);
+    }
+
+    static void writeSectionTitleBlock(XWPFDocument document, List<String> sectionTitleLines) {
+        writeTitleLine(document, SECTION_HEADER_TEXT, SECTION_HEADER_BOLD, SECTION_HEADER_FONT_SIZE, ParagraphAlignment.LEFT);
 
         for (int i = 0; i < sectionTitleLines.size(); i += 2) {
-            String koreanLine = sectionTitleLines.get(i);
-            String englishLine = sectionTitleLines.get(i + 1);
-
-            writeTitleLine(document, koreanLine, SECTION_TITLE_KOREAN_BOLD, SECTION_TITLE_KOREAN_FONT_SIZE, ParagraphAlignment.LEFT, false);
-            writeTitleLine(document, englishLine, SECTION_TITLE_ENGLISH_BOLD, SECTION_TITLE_ENGLISH_FONT_SIZE, ParagraphAlignment.LEFT, false);
+            writeTitleLine(document, sectionTitleLines.get(i), SECTION_TITLE_KOREAN_BOLD, SECTION_TITLE_KOREAN_FONT_SIZE, ParagraphAlignment.LEFT);
+            writeTitleLine(document, sectionTitleLines.get(i + 1), SECTION_TITLE_ENGLISH_BOLD, SECTION_TITLE_ENGLISH_FONT_SIZE, ParagraphAlignment.LEFT);
         }
     }
 
-    // 본문
     static void writeReferenceBlock(XWPFDocument document, String referenceRaw) throws java.io.IOException {
-        writeTitleLine(document, referenceRaw, REFERENCE_HEADER_BOLD, REFERENCE_HEADER_FONT_SIZE, ParagraphAlignment.LEFT, false);
+        writeTitleLine(document, referenceRaw, REFERENCE_HEADER_BOLD, REFERENCE_HEADER_FONT_SIZE, ParagraphAlignment.LEFT);
 
-        java.util.regex.Matcher matcher = REFERENCE_HEADER_PATTERN.matcher(referenceRaw);
-        if (matcher.find()) {
-            String bookFull = matcher.group(1);
-            String chapter = matcher.group(2);
-            int startVerse = Integer.parseInt(matcher.group(3));
-            int endVerse = Integer.parseInt(matcher.group(4));
+        ParsedCitation parsed = CitationParser.parseReferenceCitation(referenceRaw);
+        if (parsed == null) {
+            return;
+        }
 
-            for (int verseNumber = startVerse; verseNumber <= endVerse; verseNumber++) {
-                String verseText = BibleData.lookupVerse(BIBLE_RESOURCE_PATH, bookFull, chapter, String.valueOf(verseNumber));
-                writeTitleLine(document, verseNumber + ". " + verseText, VERSE_TEXT_BOLD, VERSE_TEXT_FONT_SIZE, ParagraphAlignment.LEFT, false);
-            }
+        for (int verseNumber : parsed.verses()) {
+            writeVersePair(document, parsed.bookFull(), parsed.chapter(), verseNumber, "");
         }
     }
 
-    static void writeBlocks(XWPFDocument document, java.util.List<java.util.List<String>> blocks) throws java.io.IOException {
-        for (java.util.List<String> block : blocks) {
-            String koreanTitle = block.get(0);
-            String englishTitle = block.get(1);
+    static void writeBlocks(XWPFDocument document, List<List<String>> blocks) throws java.io.IOException {
+        for (List<String> block : blocks) {
+            writePageBreak(document);
 
-            writeTitleLine(document, koreanTitle, BODY_TITLE_KOREAN_BOLD, BODY_TITLE_KOREAN_FONT_SIZE, ParagraphAlignment.LEFT, true);
-            writeTitleLine(document, englishTitle, BODY_TITLE_ENGLISH_BOLD, BODY_TITLE_ENGLISH_FONT_SIZE, ParagraphAlignment.LEFT, false);
+            writeTitleLine(document, block.get(0), BODY_TITLE_KOREAN_BOLD, BODY_TITLE_KOREAN_FONT_SIZE, ParagraphAlignment.LEFT);
+            writeTitleLine(document, block.get(1), BODY_TITLE_ENGLISH_BOLD, BODY_TITLE_ENGLISH_FONT_SIZE, ParagraphAlignment.LEFT);
 
             for (int i = 2; i < block.size(); i++) {
                 writeVersesByNumber(document, block.get(i));
@@ -122,61 +109,34 @@ public final class DocxBuilder {
     }
 
     static void writeVersesByNumber(XWPFDocument document, String citation) throws java.io.IOException {
-        String trimmed = citation.trim();
-
-        java.util.regex.Matcher matcher = PLAIN_CITATION_PATTERN.matcher(trimmed);
-        if (matcher.matches()) {
-            String bookFull = matcher.group(1);
-            String chapter = matcher.group(2);
-            int startVerse = Integer.parseInt(matcher.group(3));
-            int endVerse = (matcher.group(4) != null) ? Integer.parseInt(matcher.group(4)) : startVerse;
-
-            for (int verseNumber = startVerse; verseNumber <= endVerse; verseNumber++) {
-                String verseText = BibleData.lookupVerse(BIBLE_RESOURCE_PATH, bookFull, chapter, String.valueOf(verseNumber));
-                writeTitleLine(document, verseNumber + ". " + verseText, VERSE_TEXT_BOLD, VERSE_TEXT_FONT_SIZE, ParagraphAlignment.LEFT, false);
-            }
+        ParsedCitation parsed = CitationParser.parseCitation(citation);
+        if (parsed == null) {
             return;
         }
 
-        writeMarkedVerse(document, trimmed);
+        writeCitationBlock(document, parsed);
     }
 
-    static void writeMarkedVerse(XWPFDocument document, String citation) throws java.io.IOException {
-        java.util.regex.Matcher matcher = MARKED_CITATION_PATTERN.matcher(citation.trim());
-        if (!matcher.matches()) {
-            return;
+    static void writeCitationBlock(XWPFDocument document, ParsedCitation parsed) throws java.io.IOException {
+        String header = parsed.bookFull() + " " + parsed.chapter() + ":"
+                + CitationParser.formatVerses(parsed.verses(), parsed.marker());
+        writeTitleLine(document, header, BODY_TITLE_KOREAN_BOLD, BODY_TITLE_KOREAN_FONT_SIZE, ParagraphAlignment.LEFT);
+
+        int firstVerse = parsed.verses().get(0);
+
+        for (int verseNumber : parsed.verses()) {
+            String extra = (verseNumber == firstVerse) ? parsed.extra() : "";
+            writeVersePair(document, parsed.bookFull(), parsed.chapter(), verseNumber, extra);
         }
+    }
 
-        String bookFull = matcher.group(1);
-        String chapter = matcher.group(2);
-        int startVerse = Integer.parseInt(matcher.group(3));
-        String rest = matcher.group(4).trim();
+    static void writeVersePair(XWPFDocument document, String bookFull, String chapter, int verseNumber, String extra) throws java.io.IOException {
+        String verseText = BibleData.lookupVerse(BIBLE_RESOURCE_PATH, bookFull, chapter, String.valueOf(verseNumber));
+        String verseTextEnglish = BibleData.lookupVerse(BIBLE_RESOURCE_PATH_ENGLISH, bookFull, chapter, String.valueOf(verseNumber));
 
-        rest = rest.replaceAll("[()]", "").trim();
+        verseText = CitationParser.trimFrom(verseText, extra);
 
-        int endVerse = startVerse;
-        java.util.regex.Matcher range = java.util.regex.Pattern.compile("-(\\d+)$").matcher(rest);
-        if (range.find()) {
-            endVerse = Integer.parseInt(range.group(1));
-            rest = rest.substring(0, range.start()).trim();
-        }
-
-        String marker = rest.isEmpty() ? "" : rest.substring(0, 1);
-        String extra = rest.isEmpty() ? "" : rest.substring(1).replaceAll("~", "").trim();
-
-        String header = bookFull + " " + chapter + ":" + startVerse + marker + (endVerse != startVerse ? "-" + endVerse : "");
-        writeTitleLine(document, header, BODY_TITLE_KOREAN_BOLD, BODY_TITLE_KOREAN_FONT_SIZE, ParagraphAlignment.LEFT, false);
-
-        for (int v = startVerse; v <= endVerse; v++) {
-            String verseText = BibleData.lookupVerse(BIBLE_RESOURCE_PATH, bookFull, chapter, String.valueOf(v));
-            if (v == startVerse && !extra.isEmpty()) {
-                int index = verseText.indexOf(extra);
-                if (index >= 0) {
-                    verseText = verseText.substring(index);
-                }
-            }
-            writeTitleLine(document, v + ". " + verseText, VERSE_TEXT_BOLD, VERSE_TEXT_FONT_SIZE, ParagraphAlignment.LEFT, false);
-        }
+        writeTitleLine(document, verseNumber + ". " + verseText, VERSE_TEXT_BOLD, VERSE_TEXT_FONT_SIZE, ParagraphAlignment.LEFT);
+        writeTitleLine(document, verseNumber + ". " + verseTextEnglish, VERSE_TEXT_BOLD, VERSE_TEXT_FONT_SIZE, ParagraphAlignment.LEFT);
     }
 }
-
