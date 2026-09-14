@@ -28,7 +28,7 @@ class PptxBuilderUnit {
     private static final String PRAISE_CHAPTER = "26장";
     private static final String CONFESSION_PRAY_REFERENCE = "요한일서 1:9";
     private static final String HYMN_CHAPTER = "258장";
-    private static final String PRAYER_NAME = "떙떙떙 집사";
+    private static final String PRAYER_NAME = "땡땡땡 집사";
     private static final String CLOSING_HYMN_CHAPTER = "218장";
 
     private static final List<String> SECTION_TITLE_LINES = List.of(
@@ -90,6 +90,12 @@ class PptxBuilderUnit {
             "고린도전서 2:10", "고린도전서 11:23-26", "빌립보서 3:21"
     );
 
+    private static XMLSlideShow createHymnPptx() {
+        XMLSlideShow hymnPptx = new XMLSlideShow();
+        hymnPptx.createSlide();
+        return hymnPptx;
+    }
+
     private static List<String> collectTexts(XMLSlideShow output) {
         List<String> texts = new ArrayList<>();
 
@@ -122,8 +128,10 @@ class PptxBuilderUnit {
             template = new XMLSlideShow(in);
         }
 
-        XMLSlideShow hymnPptx = new XMLSlideShow();
-        hymnPptx.createSlide();
+        XMLSlideShow doxologyPptx = createHymnPptx();
+        XMLSlideShow praisePptx = createHymnPptx();
+        XMLSlideShow hymnPptx = createHymnPptx();
+        XMLSlideShow closingHymnPptx = createHymnPptx();
 
         ParsedSermon sermon = new ParsedSermon(
                 KOREAN_TITLE, ENGLISH_TITLE, SECTION_TITLE_LINES, REFERENCE_RAW, BLOCKS);
@@ -131,7 +139,8 @@ class PptxBuilderUnit {
         XMLSlideShow output = PptxBuilder.build(
                 template, KOREAN_TITLE, ENGLISH_TITLE, DOXOLOGY_CHAPTER, RESPONSIVE_READING_NUMBER,
                 PRAISE_CHAPTER, CONFESSION_PRAY_REFERENCE, HYMN_CHAPTER, PRAYER_NAME,
-                sermon, CLOSING_HYMN_CHAPTER, hymnPptx);
+                sermon, CLOSING_HYMN_CHAPTER,
+                doxologyPptx, praisePptx, hymnPptx, closingHymnPptx);
 
         try (FileOutputStream out = new FileOutputStream(OUTPUT_PATH)) {
             output.write(out);
@@ -143,6 +152,9 @@ class PptxBuilderUnit {
         assertTrue(containsAnywhere(texts, ENGLISH_TITLE), ENGLISH_TITLE);
         assertTrue(containsAnywhere(texts, PRAYER_NAME), PRAYER_NAME);
         assertTrue(containsAnywhere(texts, "(" + CONFESSION_PRAY_REFERENCE + ")"), CONFESSION_PRAY_REFERENCE);
+        assertTrue(containsAnywhere(texts, DOXOLOGY_CHAPTER), DOXOLOGY_CHAPTER);
+        assertTrue(containsAnywhere(texts, PRAISE_CHAPTER), PRAISE_CHAPTER);
+        assertTrue(containsAnywhere(texts, HYMN_CHAPTER), HYMN_CHAPTER);
         assertTrue(containsAnywhere(texts, CLOSING_HYMN_CHAPTER), CLOSING_HYMN_CHAPTER);
 
         assertTrue(containsAnywhere(texts, "복 있는 사람은"), "성시교독 첫 줄");
