@@ -18,21 +18,21 @@ import java.util.List;
 
 final class PptxBuilder {
 
-    static XMLSlideShow build(XMLSlideShow template, String koreanTitle, String englishTitle, String doxologyChapter, String responsiveReadingNumber, String praiseChapter, String confessionPrayReference, String hymnChapter, String prayerName, ParsedSermon sermon, String closingHymnChapter, XMLSlideShow hymnPptx) throws Exception {
+    static XMLSlideShow build(XMLSlideShow template, String koreanTitle, String englishTitle, String doxologyChapter, String responsiveReadingNumber, String praiseChapter, String confessionPrayReference, String hymnChapter, String prayerName, ParsedSermon sermon, String closingHymnChapter, XMLSlideShow doxologyPptx, XMLSlideShow praisePptx, XMLSlideShow hymnPptx, XMLSlideShow closingHymnPptx) throws Exception {
         XMLSlideShow output = copyTemplateWithoutSlides(template);
 
         writeTitleSlide(output, template, koreanTitle, englishTitle);
         writeConfessionSlides(output, template);
-        writeChapterTitleWithHymnSlides(output, template, 11, doxologyChapter, hymnPptx);
+        writeChapterTitleWithHymnSlides(output, template, 11, doxologyChapter, doxologyPptx);
         writeResponsiveReadingSlides(output, template, responsiveReadingNumber);
-        writeChapterTitleWithHymnSlides(output, template, 21, praiseChapter, hymnPptx);
+        writeChapterTitleWithHymnSlides(output, template, 21, praiseChapter, praisePptx);
         writeConfessionPraySlide(output, template, confessionPrayReference);
         writeChapterTitleWithHymnSlides(output, template, 31, hymnChapter, hymnPptx);
         writePrayerSlide(output, template, prayerName);
         writeTitleSlide(output, template, koreanTitle, englishTitle);
         writeSermonBodySlides(output, sermon);
         writeTitleSlide(output, template, koreanTitle, englishTitle);
-        writeChapterTitleWithHymnSlides(output, template, 213, closingHymnChapter, hymnPptx);
+        writeChapterTitleWithHymnSlides(output, template, 213, closingHymnChapter, closingHymnPptx);
         writeLastSlides(output, template);
         writeChapterTitleWithHymnSlides(output, template, 241, hymnChapter, hymnPptx);
         writeFinalSlides(output, template);
