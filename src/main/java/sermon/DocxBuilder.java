@@ -50,6 +50,18 @@ public final class DocxBuilder {
         return document;
     }
 
+    public static XWPFDocument buildSermonOnly(ParsedSermon sermon) throws java.io.IOException {
+        XWPFDocument document = new XWPFDocument();
+
+        writeSectionTitleBlock(document, sermon.sectionTitleLines());
+        writeBlankLine(document);
+        writeReferenceBlock(document, sermon.referenceRaw());
+        writeBlocks(document, sermon.blocks());
+        writePageBreak(document);
+
+        return document;
+    }
+
     static void writeTitleSection(XWPFDocument document, String koreanTitle, String englishTitle) {
         writeTitleLine(document, koreanTitle, KOREAN_TITLE_BOLD, KOREAN_TITLE_FONT_SIZE, ParagraphAlignment.CENTER);
         writeTitleLine(document, englishTitle, ENGLISH_TITLE_BOLD, ENGLISH_TITLE_FONT_SIZE, ParagraphAlignment.CENTER);

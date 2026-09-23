@@ -206,7 +206,10 @@
         status.textContent = "문서 " + data.docxPages + "쪽 · 슬라이드 " + data.pptxSlides + "장";
         result.innerHTML =
           '<a href="' + data.docxUrl + '">워드 내려받기</a>' +
-          '<a href="' + data.pptxUrl + '">파워포인트 내려받기</a>';
+          '<a href="' + data.pptxUrl + '">파워포인트 내려받기</a>' +
+          '<br><br>' +
+          '<a href="' + data.sermonOnlyDocxUrl + '">설교 부분만 워드 내려받기</a>' +
+          '<a href="' + data.sermonOnlyPptxUrl + '">설교 부분만 파워포인트 내려받기</a>';
         result.style.display = "block";
       } catch (error) {
         status.textContent = "서버에 연결하지 못했습니다.";

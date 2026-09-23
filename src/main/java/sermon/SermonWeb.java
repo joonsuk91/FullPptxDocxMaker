@@ -82,6 +82,7 @@ public final class SermonWeb {
             XMLSlideShow template = openTemplate();
 
             XWPFDocument document = DocxBuilder.build(sermon);
+            XWPFDocument sermonOnlyDocument = DocxBuilder.buildSermonOnly(sermon);
 
             XMLSlideShow slideShow = PptxBuilder.build(
                     template,
@@ -101,18 +102,25 @@ public final class SermonWeb {
                     openHymn(context, "closingHymnPptx"),
                     context.formParam("churchNews"));
 
+            XMLSlideShow sermonOnlySlideShow = PptxBuilder.buildSermonOnly(template, sermon);
+
             String id = UUID.randomUUID().toString();
+            String sermonOnlyId = UUID.randomUUID().toString();
             int docxPages = countPages(document);
             int pptxSlides = slideShow.getSlides().size();
 
             saveDocx(document, id);
             savePptx(slideShow, id);
+            saveDocx(sermonOnlyDocument, sermonOnlyId);
+            savePptx(sermonOnlySlideShow, sermonOnlyId);
 
             Map<String, Object> answer = new HashMap<>();
             answer.put("docxUrl", "/download/" + id + ".docx");
             answer.put("pptxUrl", "/download/" + id + ".pptx");
             answer.put("docxPages", docxPages);
             answer.put("pptxSlides", pptxSlides);
+            answer.put("sermonOnlyDocxUrl", "/download/" + sermonOnlyId + ".docx");
+            answer.put("sermonOnlyPptxUrl", "/download/" + sermonOnlyId + ".pptx");
 
             context.json(answer);
         } catch (IllegalArgumentException error) {

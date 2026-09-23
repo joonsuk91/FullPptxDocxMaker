@@ -194,6 +194,12 @@ final class PptxBuilder {
         return (int) Math.ceil(text.length() / (usableWidth / fontSize));
     }
 
+    static XMLSlideShow buildSermonOnly(XMLSlideShow template, ParsedSermon sermon) throws Exception {
+        XMLSlideShow output = copyTemplateWithoutSlides(template);
+        writeSermonBodySlides(output, sermon);
+        return output;
+    }
+
     static void writeSermonBodySlides(XMLSlideShow output, ParsedSermon sermon) throws Exception {
         writeReferenceBlockSlides(output, sermon.referenceRaw());
         writeSectionOverviewSlide(output, sermon.sectionTitleLines());

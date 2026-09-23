@@ -69,7 +69,7 @@ class DocxBuilderUnit {
         ParsedSermon sermon = new ParsedSermon(
                 KOREAN_TITLE, ENGLISH_TITLE, SECTION_TITLE_LINES, REFERENCE_RAW, BLOCKS);
 
-        XWPFDocument document = DocxBuilder.build(sermon, null);
+        XWPFDocument document = DocxBuilder.build(sermon);
 
         try (FileOutputStream out = new FileOutputStream(OUTPUT_PATH)) {
             document.write(out);

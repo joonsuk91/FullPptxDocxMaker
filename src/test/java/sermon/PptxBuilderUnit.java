@@ -138,7 +138,7 @@ class PptxBuilderUnit {
         XMLSlideShow output = PptxBuilder.build(
                 template, KOREAN_TITLE, ENGLISH_TITLE, DOXOLOGY_CHAPTER, RESPONSIVE_READING_NUMBER,
                 PRAISE_CHAPTER, CONFESSION_PRAY_REFERENCE, HYMN_CHAPTER, PRAYER_NAME,
-                sermon, CLOSING_HYMN_CHAPTER, doxologyHymnPptx, praiseHymnPptx, hymnPptx, closingHymnPptx);
+                sermon, CLOSING_HYMN_CHAPTER, doxologyHymnPptx, praiseHymnPptx, hymnPptx, closingHymnPptx, "안녕하세요.");
 
         try (FileOutputStream out = new FileOutputStream(OUTPUT_PATH)) {
             output.write(out);
