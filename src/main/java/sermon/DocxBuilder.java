@@ -42,6 +42,7 @@ public final class DocxBuilder {
         writeTitleSection(document, sermon.koreanTitle(), sermon.englishTitle());
         writeBlankLine(document);
         writeSectionTitleBlock(document, sermon.sectionTitleLines());
+        writeBlankLine(document);
         writeReferenceBlock(document, sermon.referenceRaw());
         writeBlocks(document, sermon.blocks());
         writePageBreak(document);
@@ -54,6 +55,8 @@ public final class DocxBuilder {
         writeTitleLine(document, englishTitle, ENGLISH_TITLE_BOLD, ENGLISH_TITLE_FONT_SIZE, ParagraphAlignment.CENTER);
     }
 
+    private static final String KOREAN_FONT = "맑은 고딕";
+
     static void writeTitleLine(XWPFDocument document, String text, boolean bold, int fontSize, ParagraphAlignment alignment) {
         XWPFParagraph paragraph = document.createParagraph();
         paragraph.setAlignment(alignment);
@@ -62,6 +65,7 @@ public final class DocxBuilder {
         run.setText(text);
         run.setBold(bold);
         run.setFontSize(fontSize);
+        run.setFontFamily(KOREAN_FONT);
     }
 
     static void writeBlankLine(XWPFDocument document) {
@@ -103,6 +107,7 @@ public final class DocxBuilder {
             writeTitleLine(document, block.get(1), BODY_TITLE_ENGLISH_BOLD, BODY_TITLE_ENGLISH_FONT_SIZE, ParagraphAlignment.LEFT);
 
             for (int i = 2; i < block.size(); i++) {
+                writeBlankLine(document);
                 writeVersesByNumber(document, block.get(i));
             }
         }

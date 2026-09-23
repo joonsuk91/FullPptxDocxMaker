@@ -1,31 +1,28 @@
 package sermon;
 
-import org.apache.poi.openxml4j.opc.OPCPackage;
-import org.apache.poi.openxml4j.opc.PackagePart;
-import org.apache.poi.openxml4j.opc.PackageRelationship;
 import org.apache.poi.sl.usermodel.VerticalAlignment;
 import org.apache.poi.xslf.usermodel.XMLSlideShow;
 import org.apache.poi.xslf.usermodel.XSLFSlide;
 import org.apache.poi.xslf.usermodel.XSLFTextBox;
+import org.apache.poi.xslf.usermodel.XSLFTextParagraph;
 import org.apache.poi.xslf.usermodel.XSLFTextRun;
 import org.apache.poi.xslf.usermodel.XSLFTextShape;
 
 import java.awt.geom.Rectangle2D;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.util.ArrayList;
 import java.util.List;
 
 final class PptxBuilder {
 
-    static XMLSlideShow build(XMLSlideShow template, String koreanTitle, String englishTitle, String doxologyChapter, String responsiveReadingNumber, String praiseChapter, String confessionPrayReference, String hymnChapter, String prayerName, ParsedSermon sermon, String closingHymnChapter, XMLSlideShow doxologyPptx, XMLSlideShow praisePptx, XMLSlideShow hymnPptx, XMLSlideShow closingHymnPptx) throws Exception {
+    static XMLSlideShow build(XMLSlideShow template, String koreanTitle, String englishTitle, String doxologyChapter, String responsiveReadingNumber, String praiseChapter, String confessionPrayReference, String hymnChapter, String prayerName, ParsedSermon sermon, String closingHymnChapter, XMLSlideShow doxologyHymnPptx, XMLSlideShow praiseHymnPptx, XMLSlideShow hymnPptx, XMLSlideShow closingHymnPptx, String churchNews) throws Exception {
         XMLSlideShow output = copyTemplateWithoutSlides(template);
 
         writeTitleSlide(output, template, koreanTitle, englishTitle);
         writeConfessionSlides(output, template);
-        writeChapterTitleWithHymnSlides(output, template, 11, doxologyChapter, doxologyPptx);
+        writeChapterTitleWithHymnSlides(output, template, 11, doxologyChapter, doxologyHymnPptx);
         writeResponsiveReadingSlides(output, template, responsiveReadingNumber);
-        writeChapterTitleWithHymnSlides(output, template, 21, praiseChapter, praisePptx);
+        writeChapterTitleWithHymnSlides(output, template, 21, praiseChapter, praiseHymnPptx);
         writeConfessionPraySlide(output, template, confessionPrayReference);
         writeChapterTitleWithHymnSlides(output, template, 31, hymnChapter, hymnPptx);
         writePrayerSlide(output, template, prayerName);
@@ -37,10 +34,27 @@ final class PptxBuilder {
         writeChapterTitleWithHymnSlides(output, template, 241, hymnChapter, hymnPptx);
         writeFinalSlides(output, template);
         writeTitleSlide(output, template, koreanTitle, englishTitle);
-
-        removeNotes(output);
+        writeChurchNewsSlide(output, churchNews);
 
         return output;
+    }
+
+    static void writeChurchNewsSlide(XMLSlideShow output, String churchNews) {
+        if (churchNews == null || churchNews.isBlank()) {
+            return;
+        }
+
+        XSLFSlide slide = output.createSlide();
+        XSLFTextBox textBox = slide.createTextBox();
+        textBox.setAnchor(new Rectangle2D.Double(0, 0, output.getPageSize().getWidth(), output.getPageSize().getHeight()));
+        textBox.setVerticalAlignment(VerticalAlignment.TOP);
+
+        addTextParagraph(textBox, "<교회소식>", 32.0, true);
+        addTextParagraph(textBox, "", 28.0, false);
+
+        for (String line : churchNews.split("\\R")) {
+            addTextParagraph(textBox, line, 28.0, false);
+        }
     }
 
     static XMLSlideShow copyTemplateWithoutSlides(XMLSlideShow template) throws Exception {
@@ -52,35 +66,6 @@ final class PptxBuilder {
             output.removeSlide(i);
         }
         return output;
-    }
-
-    static void removeNotes(XMLSlideShow output) throws Exception {
-        OPCPackage pack = output.getPackage();
-        List<PackagePart> parts = new ArrayList<>(pack.getParts());
-
-        for (PackagePart part : parts) {
-            if (part.isRelationshipPart()) {
-                continue;
-            }
-
-            List<String> noteIds = new ArrayList<>();
-            for (PackageRelationship relationship : part.getRelationships()) {
-                String type = relationship.getRelationshipType();
-                if (type.endsWith("/notesSlide") || type.endsWith("/notesMaster")) {
-                    noteIds.add(relationship.getId());
-                }
-            }
-            for (String id : noteIds) {
-                part.removeRelationship(id);
-            }
-        }
-
-        for (PackagePart part : parts) {
-            String name = part.getPartName().getName();
-            if (name.startsWith("/ppt/notesSlides/") || name.startsWith("/ppt/notesMasters/")) {
-                pack.removePart(part.getPartName());
-            }
-        }
     }
 
     static void writeTitleSlide(XMLSlideShow output, XMLSlideShow template, String koreanTitle, String englishTitle) {
@@ -130,15 +115,52 @@ final class PptxBuilder {
     }
 
     static void addTextParagraph(XSLFTextShape textShape, String text, double fontSize, boolean bold) {
-        XSLFTextRun run = textShape.addNewTextParagraph().addNewTextRun();
+        if (text == null || text.isEmpty()) {
+            textShape.addNewTextParagraph().addNewTextRun().setText("");
+            return;
+        }
+
+        XSLFTextParagraph paragraph = textShape.addNewTextParagraph();
+
+        try {
+            org.apache.xmlbeans.XmlCursor cursor = paragraph.getXmlObject().newCursor();
+            String uri = "http://schemas.openxmlformats.org/drawingml/2006/main";
+
+            javax.xml.namespace.QName pPr = new javax.xml.namespace.QName(uri, "pPr");
+            if (!cursor.toChild(pPr)) {
+                cursor.toFirstContentToken();
+                cursor.insertElement(pPr);
+                cursor.toPrevSibling();
+            }
+
+            javax.xml.namespace.QName defRPr = new javax.xml.namespace.QName(uri, "defRPr");
+            if (!cursor.toChild(defRPr)) {
+                cursor.toFirstContentToken();
+                cursor.insertElement(defRPr);
+                cursor.toPrevSibling();
+            }
+
+            javax.xml.namespace.QName bAttr = new javax.xml.namespace.QName("", "b");
+            cursor.removeAttribute(bAttr);
+            cursor.insertAttributeWithValue(bAttr, bold ? "1" : "0");
+
+            cursor.dispose();
+        } catch (Exception ignored) {
+        }
+
+        XSLFTextRun run = paragraph.addNewTextRun();
         run.setText(text);
         run.setFontSize(fontSize);
         run.setBold(bold);
+
+        org.openxmlformats.schemas.drawingml.x2006.main.CTTextCharacterProperties rPr = run.getRPr(true);
+        rPr.addNewLatin().setTypeface("Malgun Gothic");
+        rPr.addNewEa().setTypeface("Malgun Gothic");
     }
 
     static void writeConfessionPraySlide(XMLSlideShow output, XMLSlideShow template, String reference) {
         XSLFSlide slide = PptxCitationParser.copySlideFromTemplate(output, template, 30);
-        PptxCitationParser.insertText(slide, 0, 2, "(" + reference + ")");
+        PptxCitationParser.insertText(slide, 0, 2, "(" + reference.trim() + ")");
     }
 
     static void writePrayerSlide(XMLSlideShow output, XMLSlideShow template, String name) {
@@ -190,7 +212,7 @@ final class PptxBuilder {
         XSLFSlide slide = output.createSlide();
         XSLFTextBox textBox = slide.createTextBox();
         textBox.setAnchor(new Rectangle2D.Double(0, 0, output.getPageSize().getWidth(), output.getPageSize().getHeight()));
-        textBox.setVerticalAlignment(VerticalAlignment.TOP);
+        textBox.setVerticalAlignment(VerticalAlignment.MIDDLE);
 
         for (int i = 0; i < sectionTitleLines.size(); i += 2) {
             if (i > 0) {

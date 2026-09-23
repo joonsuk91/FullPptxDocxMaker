@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>설교 원고 변환기</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+          margin: 0;
+          padding: 40px 20px;
+          background: #f5f7fa;
+          font-family: -apple-system, BlinkMacSystemFont,
+          "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic",
+          "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+          color: #1a1a1a;
+          line-height: 1.7;
+        }
+        .card {
+          max-width: 760px;
+          margin: 0 auto;
+          background: #ffffff;
+          border: 1px solid #e3e7ec;
+          border-radius: 12px;
+          overflow: hidden;
+        }
+        .bar { height: 4px; background: #2f6fd0; }
+        .section { padding: 28px 32px; border-top: 1px solid #eef1f4; }
+        .section:first-of-type { border-top: none; }
+        h1 { font-size: 22px; font-weight: 600; margin: 0 0 8px; }
+        h2 { font-size: 16px; font-weight: 600; margin: 0 0 14px; }
+        p.lead { font-size: 14px; color: #5b6472; margin: 0; }
+        .tags { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+        .tag { font-size: 12px; background: #e8f0fb; color: #1b4a8c; padding: 4px 12px; border-radius: 6px; }
+        textarea {
+          width: 100%; height: 220px; padding: 12px;
+          border: 1px solid #d5dbe3; border-radius: 8px;
+          font-family: inherit; font-size: 14px; line-height: 1.6; resize: vertical;
+        }
+        input[type=text] {
+          width: 100%; height: 38px; padding: 0 10px;
+          border: 1px solid #d5dbe3; border-radius: 8px;
+          font-family: inherit; font-size: 14px;
+        }
+        input[type=file] { width: 100%; font-size: 12px; color: #5b6472; }
+        textarea:focus, input[type=text]:focus { outline: none; border-color: #2f6fd0; }
+        .grid {
+          display: grid;
+          grid-template-columns: 110px minmax(0,1fr) minmax(0,1fr);
+          gap: 12px 14px; align-items: center;
+        }
+        .label { font-size: 13px; color: #5b6472; }
+        .hint { font-size: 12px; color: #97a0ad; }
+        details { margin-bottom: 12px; }
+        summary { font-size: 13px; color: #2f6fd0; cursor: pointer; }
+        pre {
+          background: #f7f9fb; border: 1px solid #e3e7ec; border-radius: 8px;
+          padding: 12px; font-size: 12px; line-height: 1.6; overflow-x: auto; margin: 10px 0 0;
+        }
+        .footer {
+          padding: 20px 32px; border-top: 1px solid #eef1f4;
+          display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+        }
+        #status { font-size: 13px; color: #97a0ad; }
+        button {
+          background: #2f6fd0; color: #ffffff; border: none;
+          padding: 10px 26px; border-radius: 8px;
+          font-family: inherit; font-size: 14px; cursor: pointer;
+        }
+        button:hover { background: #255aad; }
+        button:disabled { background: #b9c3d1; cursor: default; }
+        #result { display: none; padding: 20px 32px; border-top: 1px solid #eef1f4; }
+        #result a {
+          display: inline-block; margin-right: 12px; padding: 9px 18px;
+          border: 1px solid #2f6fd0; border-radius: 8px;
+          color: #2f6fd0; text-decoration: none; font-size: 14px;
+        }
+        #result a:hover { background: #e8f0fb; }
+        .error { color: #c0392b; font-size: 13px; }
+        @media (max-width: 600px) {
+          .grid { grid-template-columns: 1fr; }
+          .section, .footer, #result { padding-left: 20px; padding-right: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="bar"></div>
+
+    <div class="section">
+        <h1>설교 원고 변환기</h1>
+        <p class="lead">축약된 설교 원고를 예배용 워드 문서와 파워포인트로 바꿔 줍니다.</p>
+    </div>
+
+    <form id="form">
+
+        <div class="section">
+            <h2>설교 원고</h2>
+            <details>
+                <summary>설교 원고 체크 사항:</summary>
+                <pre>
+                    성경구절을 두 줄에 나누어서 적으면 인식 불가
+                    한 줄에 전부 넣어서 적어야 인식 가능
+
+                    예)
+                    잘못된 예시:
+                    하나님 자녀
+                    Child of God
+                    (롬6:6-11)
+                    1.새 생명으로 의롭게 된 자
+                    1. Made righteous through new life
+                    6-7
+                    벧전2:22
+                    -24
+                    요19:30 고후
+                    5:21
+                    고후5:
+                    17
+
+                    옳바른 예시:
+                    하나님 자녀
+                    Child of God
+                    (롬6:6-11)
+                    1.새 생명으로 의롭게 된 자
+                    1. Made righteous through new life
+                    6-7
+                    벧전2:22-24
+                    요19:30 고후5:21
+                    고후5:17
+                </pre>
+            </details>
+            <textarea name="manuscript" required placeholder="원고를 붙여넣으세요"></textarea>
+        </div>
+
+        <div class="section">
+            <h2>예배 순서</h2>
+            <div class="grid">
+                <span class="label">영광송</span>
+                <input type="text" name="doxologyChapter" placeholder="예: 5장" required>
+                <input type="file" name="doxologyHymnPptx" accept=".ppt,.pptx" required>
+
+                <span class="label">성시교독 번호</span>
+                <input type="text" name="responsiveReadingNumber" placeholder="" required>
+                <span class="hint">번호만 입력</span>
+
+                <span class="label">찬양과 경배</span>
+                <input type="text" name="praiseChapter" placeholder="예: 26장" required>
+                <input type="file" name="praiseHymnPptx" accept=".ppt,.pptx" required>
+
+                <span class="label">고백의 기도</span>
+                <input type="text" name="confessionPrayReference" placeholder="예: 요한일서 1:9" required>
+                <span class="hint">성경 구절</span>
+
+                <span class="label">찬송</span>
+                <input type="text" name="hymnChapter" placeholder="예: 258장" required>
+                <input type="file" name="hymnPptx" accept=".ppt,.pptx" required>
+
+                <span class="label">대표기도</span>
+                <input type="text" name="prayerName" placeholder="OOO 집사" required>
+                <span class="hint">직분까지 적어야함</span>
+
+                <span class="label">마지막 찬송</span>
+                <input type="text" name="closingHymnChapter" placeholder="예: 218장" required>
+                <input type="file" name="closingHymnPptx" accept=".ppt,.pptx" required>
+
+                <span class="label">교회소식</span>
+                <textarea name="churchNews" placeholder="교회소식 내용 (없으면 비워두세요)" style="height: 90px;"></textarea>
+            </div>
+        </div>
+
+        <div class="footer">
+            <span id="status"></span>
+            <button type="submit" id="submit">만들기</button>
+        </div>
+
+    </form>
+
+    <div id="result"></div>
+</div>
+
+<script>
+    const form = document.getElementById("form");
+    const submit = document.getElementById("submit");
+    const status = document.getElementById("status");
+    const result = document.getElementById("result");
+
+    form.addEventListener("submit", async function (event) {
+      event.preventDefault();
+
+      submit.disabled = true;
+      status.textContent = "만드는 중입니다. 1분 정도 걸립니다.";
+      status.className = "";
+      result.style.display = "none";
+
+      try {
+        const response = await fetch("/build", { method: "POST", body: new FormData(form) });
+        const data = await response.json();
+
+        if (!response.ok) {
+          status.textContent = data.message;
+          status.className = "error";
+          return;
+        }
+
+        status.textContent = "문서 " + data.docxPages + "쪽 · 슬라이드 " + data.pptxSlides + "장";
+        result.innerHTML =
+          '<a href="' + data.docxUrl + '">워드 내려받기</a>' +
+          '<a href="' + data.pptxUrl + '">파워포인트 내려받기</a>';
+        result.style.display = "block";
+      } catch (error) {
+        status.textContent = "서버에 연결하지 못했습니다.";
+        status.className = "error";
+      } finally {
+        submit.disabled = false;
+      }
+    });
+</script>
+
+</body>
+</html>
